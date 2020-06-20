@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                                         check = false;
                                         break;
                                     }
-                                    Log.d("Value is : ", str);
+                                    Log.d("DB FCM tokens are : ", str);
                                 }
                                 if (check)
                                     mDatabase.push().setValue(token);
@@ -123,8 +123,11 @@ public class MainActivity extends AppCompatActivity {
                                 myRecycler.setHasFixedSize(true);
 
                                 final List<String> content = new ArrayList<>();
-                                for (int i = 0; i < count; i++)
-                                    content.add(getListString(i));
+                                for (DataSnapshot sp : dataSnapshot.getChildren())
+                                {
+                                    Log.d("DB Keys are : ", String.valueOf(sp.getKey()));
+                                    content.add(getListString(sp.getKey()));
+                                }
                                 Dialog.hide(); // DB 관련 로딩이 종료되면 로딩창 제거
 
                                 ParallaxRecyclerAdapter<String> stringAdapter = new ParallaxRecyclerAdapter<String>(content) {
@@ -178,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
             super(itemView);
         }
     }
-    public String getListString(int position) {
-        return position + " - android";
+    public String getListString(String position) {
+        return position;
     }
 }
