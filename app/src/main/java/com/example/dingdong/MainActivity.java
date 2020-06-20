@@ -2,8 +2,11 @@ package com.example.dingdong;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.net.Uri;
@@ -11,6 +14,8 @@ import android.os.Bundle;
 import android.os.Debug;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.getbase.floatingactionbutton.FloatingActionButton;
@@ -24,6 +29,10 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
+import com.poliveira.parallaxrecyclerview.ParallaxRecyclerAdapter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     boolean check = true;
@@ -92,5 +101,53 @@ public class MainActivity extends AppCompatActivity {
                         });
                     }
                 });
+
+        RecyclerView myRecycler = (RecyclerView) findViewById(R.id.myRecycler);
+        LinearLayoutManager manager = new LinearLayoutManager(this);
+        manager.setOrientation(LinearLayoutManager.VERTICAL);
+        myRecycler.setLayoutManager(manager);
+        myRecycler.setHasFixedSize(true);
+
+        final List<String> content = new ArrayList<>();
+        for (int i = 0; i < 30; i++)
+            content.add(getListString(i));
+
+
+        ParallaxRecyclerAdapter<String> stringAdapter = new ParallaxRecyclerAdapter<String>(content) {
+            @Override
+            public void onBindViewHolderImpl(RecyclerView.ViewHolder viewHolder, ParallaxRecyclerAdapter parallaxRecyclerAdapter, int i) {
+                ((TextView) viewHolder.itemView).setText(content.get(i));
+            }
+
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolderImpl(ViewGroup viewGroup, ParallaxRecyclerAdapter parallaxRecyclerAdapter, int i) {
+                return new SimpleViewHolder(getLayoutInflater().inflate(android.R.layout.simple_list_item_1, viewGroup, false));
+            }
+
+            @Override
+            public int getItemCountImpl(ParallaxRecyclerAdapter parallaxRecyclerAdapter) {
+                return content.size();
+            }
+        };
+
+        stringAdapter.setParallaxHeader(getLayoutInflater().inflate(R.layout.my_header, myRecycler, false), myRecycler);
+        stringAdapter.setOnParallaxScroll(new ParallaxRecyclerAdapter.OnParallaxScroll() {
+            @Override
+            public void onParallaxScroll(float percentage, float offset, View parallax) {
+                //TODO: implement toolbar alpha. See README for details
+            }
+        });
+        myRecycler.setAdapter(stringAdapter);
+    }
+
+    static class SimpleViewHolder extends RecyclerView.ViewHolder {
+
+        public SimpleViewHolder(View itemView) {
+            super(itemView);
+        }
+    }
+
+    public String getListString(int position) {
+        return position + " - android";
     }
 }
