@@ -1,10 +1,12 @@
 package com.example.dingdong;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
@@ -138,6 +140,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         myRecycler.setAdapter(stringAdapter);
+
+        stringAdapter.setOnClickEvent(new ParallaxRecyclerAdapter.OnClickEvent() {
+            @Override
+            public void onClick(View view, int i) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("선택한 인덱스는").setMessage(i+"입니다");
+                builder.setPositiveButton("확인", new DialogInterface.OnClickListener(){
+                    @Override
+                    public void onClick(DialogInterface dialog, int id)
+                    {
+                        Toast.makeText(getApplicationContext(), "OK Click", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+            }
+        });
     }
 
     static class SimpleViewHolder extends RecyclerView.ViewHolder {
