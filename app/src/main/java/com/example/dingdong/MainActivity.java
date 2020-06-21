@@ -35,6 +35,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.poliveira.parallaxrecyclerview.ParallaxRecyclerAdapter;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                         // DB 크롤링 데이터 갯수 만큼 리스트 출력
                         mDatabase.addValueEventListener(new ValueEventListener() {
                             @Override
-                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                            public void onDataChange(@NonNull final DataSnapshot dataSnapshot) {
                                 count = (int) dataSnapshot.getChildrenCount();
                                 RecyclerView myRecycler = (RecyclerView) findViewById(R.id.myRecycler);
                                 LinearLayoutManager manager = new LinearLayoutManager(MainActivity.this);
@@ -126,7 +127,10 @@ public class MainActivity extends AppCompatActivity {
                                 for (DataSnapshot sp : dataSnapshot.getChildren())
                                 {
                                     Log.d("DB Keys are : ", String.valueOf(sp.getKey()));
-                                    content.add(getListString(sp.getKey()));
+                                    if (sp.getKey().equals("Device_ID"))
+                                        continue;
+                                    else
+                                        content.add(getListString(sp.getKey()));
                                 }
                                 Dialog.hide(); // DB 관련 로딩이 종료되면 로딩창 제거
 
@@ -160,10 +164,18 @@ public class MainActivity extends AppCompatActivity {
                                 stringAdapter.setOnClickEvent(new ParallaxRecyclerAdapter.OnClickEvent() {
                                     @Override
                                     public void onClick(View view, int i) {
-                                        new KAlertDialog(MainActivity.this, KAlertDialog.SUCCESS_TYPE) // 팝업창 생성
-                                                .setTitleText("선택한 인덱스는")
-                                                .setContentText(i+"입니다")
-                                                .show();
+                                        int j = 0;
+                                        for (DataSnapshot sp : dataSnapshot.getChildren())
+                                        {
+                                            if (i==j)
+                                            {
+                                                new KAlertDialog(MainActivity.this, KAlertDialog.SUCCESS_TYPE) // 팝업창 생성
+                                                        .setTitleText(sp.getKey())
+                                                        .setContentText(String.valueOf(sp.getValue()))
+                                                        .show();
+                                            }
+                                            j+=1;
+                                        }
                                     }
                                 });
                             }
