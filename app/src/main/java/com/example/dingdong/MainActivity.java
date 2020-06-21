@@ -1,7 +1,6 @@
 package com.example.dingdong;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,7 +13,6 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Debug;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,7 +33,6 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.poliveira.parallaxrecyclerview.ParallaxRecyclerAdapter;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -171,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                                             {
                                                 new KAlertDialog(MainActivity.this, KAlertDialog.SUCCESS_TYPE) // 팝업창 생성
                                                         .setTitleText(sp.getKey())
-                                                        .setContentText(String.valueOf(sp.getValue()))
+                                                        .setContentText(String.valueOf(sp.getValue()).replaceAll("\\{result=\\[","").replaceAll("]\\}",""))
                                                         .show();
                                             }
                                             j+=1;
