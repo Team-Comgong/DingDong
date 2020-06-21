@@ -1,11 +1,11 @@
 package com.example.dingdong;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -13,13 +13,13 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Debug;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.developer.kalert.KAlertDialog;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -37,13 +37,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    boolean check = true;
+    boolean check = true; // FCM 관련 중복된 토큰 판별
+    int count; // DB 크롤링 데이터 갯수
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //DB 로딩동안 출력되는 로딩창
+        final ProgressDialog Dialog = new ProgressDialog(this);
+        Dialog.setMessage("데이터를 불러오는 중...");
+        Dialog.show();
+
+        // 개발자 관련 안내 플로팅 버튼
         final FloatingActionButton actionA = (FloatingActionButton) findViewById(R.id.action_a);
         actionA.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -53,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
         final FloatingActionButton actionB = (FloatingActionButton) findViewById(R.id.action_b);
         actionB.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -64,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //Firebase 관련 처리
         FirebaseInstanceId.getInstance().getInstanceId()
                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                     @Override
@@ -73,14 +80,14 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
 
-                        // Get new Instance ID token
+                        // FCM 토큰 생성
                         final String token = task.getResult().getToken();
                         Log.d("My token is : ", token);
 
+                        // 해당 토큰이 이미 DB에 존재한다면 Pass 반대경우는 Input
                         final DatabaseReference mDatabase;// ...
-                        mDatabase = FirebaseDatabase.getInstance().getReference().child("Device_ID");
-
-                        mDatabase.addValueEventListener(new ValueEventListener() {
+                        mDatabase = FirebaseDatabase.getInstance().getReference();
+                        mDatabase.child("Device_ID").addValueEventListener(new ValueEventListener() {
                             @Override
                             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                                 for (DataSnapshot sp : dataSnapshot.getChildren())
@@ -91,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                                         check = false;
                                         break;
                                     }
-                                    Log.d("Value is : ", str);
+                                    Log.d("DB FCM tokens are : ", str);
                                 }
                                 if (check)
                                     mDatabase.push().setValue(token);
@@ -101,72 +108,89 @@ public class MainActivity extends AppCompatActivity {
 
                             }
                         });
+
+                        // DB 크롤링 데이터 갯수 만큼 리스트 출력
+                        mDatabase.addValueEventListener(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull final DataSnapshot dataSnapshot) {
+                                count = (int) dataSnapshot.getChildrenCount();
+                                RecyclerView myRecycler = (RecyclerView) findViewById(R.id.myRecycler);
+                                LinearLayoutManager manager = new LinearLayoutManager(MainActivity.this);
+                                manager.setOrientation(LinearLayoutManager.VERTICAL);
+                                myRecycler.setLayoutManager(manager);
+                                myRecycler.setHasFixedSize(true);
+
+                                final List<String> content = new ArrayList<>();
+                                for (DataSnapshot sp : dataSnapshot.getChildren())
+                                {
+                                    Log.d("DB Keys are : ", String.valueOf(sp.getKey()));
+                                    if (sp.getKey().equals("Device_ID"))
+                                        continue;
+                                    else
+                                        content.add(getListString(sp.getKey()));
+                                }
+                                Dialog.hide(); // DB 관련 로딩이 종료되면 로딩창 제거
+
+                                ParallaxRecyclerAdapter<String> stringAdapter = new ParallaxRecyclerAdapter<String>(content) {
+                                    @Override
+                                    public void onBindViewHolderImpl(RecyclerView.ViewHolder viewHolder, ParallaxRecyclerAdapter parallaxRecyclerAdapter, int i) {
+                                        ((TextView) viewHolder.itemView).setText(content.get(i));
+                                    }
+
+                                    @Override
+                                    public RecyclerView.ViewHolder onCreateViewHolderImpl(ViewGroup viewGroup, ParallaxRecyclerAdapter parallaxRecyclerAdapter, int i) {
+                                        return new SimpleViewHolder(getLayoutInflater().inflate(android.R.layout.simple_list_item_1, viewGroup, false));
+                                    }
+
+                                    @Override
+                                    public int getItemCountImpl(ParallaxRecyclerAdapter parallaxRecyclerAdapter) {
+                                        return content.size();
+                                    }
+                                };
+
+                                stringAdapter.setParallaxHeader(getLayoutInflater().inflate(R.layout.my_header, myRecycler, false), myRecycler);
+                                stringAdapter.setOnParallaxScroll(new ParallaxRecyclerAdapter.OnParallaxScroll() {
+                                    @Override
+                                    public void onParallaxScroll(float percentage, float offset, View parallax) {
+                                        //TODO: implement toolbar alpha. See README for details
+                                    }
+                                });
+                                myRecycler.setAdapter(stringAdapter);
+
+                                // 리스트 아이템 터치 이벤트
+                                stringAdapter.setOnClickEvent(new ParallaxRecyclerAdapter.OnClickEvent() {
+                                    @Override
+                                    public void onClick(View view, int i) {
+                                        int j = 0;
+                                        for (DataSnapshot sp : dataSnapshot.getChildren())
+                                        {
+                                            if (i==j)
+                                            {
+                                                new KAlertDialog(MainActivity.this, KAlertDialog.SUCCESS_TYPE) // 팝업창 생성
+                                                        .setTitleText(sp.getKey())
+                                                        .setContentText(String.valueOf(sp.getValue()).replaceAll("\\{result=\\[","").replaceAll("]\\}",""))
+                                                        .show();
+                                            }
+                                            j+=1;
+                                        }
+                                    }
+                                });
+                            }
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                            }
+                        });
                     }
                 });
-
-        RecyclerView myRecycler = (RecyclerView) findViewById(R.id.myRecycler);
-        LinearLayoutManager manager = new LinearLayoutManager(this);
-        manager.setOrientation(LinearLayoutManager.VERTICAL);
-        myRecycler.setLayoutManager(manager);
-        myRecycler.setHasFixedSize(true);
-
-        final List<String> content = new ArrayList<>();
-        for (int i = 0; i < 30; i++)
-            content.add(getListString(i));
-
-
-        ParallaxRecyclerAdapter<String> stringAdapter = new ParallaxRecyclerAdapter<String>(content) {
-            @Override
-            public void onBindViewHolderImpl(RecyclerView.ViewHolder viewHolder, ParallaxRecyclerAdapter parallaxRecyclerAdapter, int i) {
-                ((TextView) viewHolder.itemView).setText(content.get(i));
-            }
-
-            @Override
-            public RecyclerView.ViewHolder onCreateViewHolderImpl(ViewGroup viewGroup, ParallaxRecyclerAdapter parallaxRecyclerAdapter, int i) {
-                return new SimpleViewHolder(getLayoutInflater().inflate(android.R.layout.simple_list_item_1, viewGroup, false));
-            }
-
-            @Override
-            public int getItemCountImpl(ParallaxRecyclerAdapter parallaxRecyclerAdapter) {
-                return content.size();
-            }
-        };
-
-        stringAdapter.setParallaxHeader(getLayoutInflater().inflate(R.layout.my_header, myRecycler, false), myRecycler);
-        stringAdapter.setOnParallaxScroll(new ParallaxRecyclerAdapter.OnParallaxScroll() {
-            @Override
-            public void onParallaxScroll(float percentage, float offset, View parallax) {
-                //TODO: implement toolbar alpha. See README for details
-            }
-        });
-        myRecycler.setAdapter(stringAdapter);
-
-        stringAdapter.setOnClickEvent(new ParallaxRecyclerAdapter.OnClickEvent() {
-            @Override
-            public void onClick(View view, int i) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("선택한 인덱스는").setMessage(i+"입니다");
-                builder.setPositiveButton("확인", new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        Toast.makeText(getApplicationContext(), "OK Click", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                AlertDialog alertDialog = builder.create();
-                alertDialog.show();
-            }
-        });
     }
 
     static class SimpleViewHolder extends RecyclerView.ViewHolder {
-
         public SimpleViewHolder(View itemView) {
             super(itemView);
         }
     }
-
-    public String getListString(int position) {
-        return position + " - android";
+    public String getListString(String position) {
+        return position;
     }
 }
