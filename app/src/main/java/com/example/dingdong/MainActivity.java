@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                                             {
                                                 new KAlertDialog(MainActivity.this, KAlertDialog.SUCCESS_TYPE) // 팝업창 생성
                                                         .setTitleText(sp.getKey())
-                                                        .setContentText(String.valueOf(sp.getValue()).replaceAll("\\{result=\\[","").replaceAll("]\\}",""))
+                                                        .setContentText(String.valueOf(sp.getValue()).replaceAll("\\{result=\\[","").replaceAll("]\\}","").replaceAll(",","\n"))
                                                         .show();
                                             }
                                             j+=1;
