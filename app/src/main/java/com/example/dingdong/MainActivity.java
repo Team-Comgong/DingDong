@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                                     Log.d("DB FCM tokens are : ", str);
                                 }
                                 if (check)
-                                    mDatabase.push().setValue(token);
+                                    mDatabase.child("Device_ID").push().setValue(token);
                             }
                             @Override
                             public void onCancelled(@NonNull DatabaseError databaseError) {
