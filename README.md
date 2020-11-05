@@ -5,9 +5,7 @@
     
     Android API V22 ~ 28
     
-    Firebase-messaging V20.0.0
-    
-    Firebase-database V19.1.0
+    Firebase V8.4.1
     
     Firebase-core V17.0.0
     
